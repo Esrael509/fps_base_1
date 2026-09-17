@@ -5,7 +5,7 @@ extends Node3D
 ## (vía call_deferred). Diseñado para reciclarse: reset_for() reutiliza
 ## el mismo nodo para una coordenada nueva en vez de crear uno.
 
-const CHUNK_SIZE := 64.0   # metros por lado
+const CHUNK_SIZE := 16.0   # metros por lado
 const BASE_RES := 32       # subdivisiones en LOD 0 (máximo detalle)
 # Muestras del heightmap de colisión por lado. HeightMapShape3D asume 1
 # unidad entre muestras, así que esto DEBE ser CHUNK_SIZE + 1 para que la

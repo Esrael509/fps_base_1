@@ -11,9 +11,9 @@ extends Node3D
 ## de un montón de LOD lejano -> el jugador caía al vacío momentáneamente.
 
 @export var player_path: NodePath
-@export var render_distance: int = 5     # radio (en chunks) con malla de máximo detalle
-@export var far_distance: int = 14       # radio con LOD reducido (sin colisión)
-@export var collision_distance: int = 4  # radio con collider físico activo
+@export var render_distance: int = 1     # radio (en chunks) con malla de máximo detalle
+@export var far_distance: int = 5       # radio con LOD reducido (sin colisión)
+@export var collision_distance: int = 2  # radio con collider físico activo
 @export var world_seed: int = 987651
 @export var max_far_chunks_per_frame: int = 8  # throttle SOLO para lo no-crítico
 
@@ -47,7 +47,7 @@ func _ready() -> void:
 	player.global_position = start
 
 	#_apply_visual_range()
-	#_recalculate_needed(_world_to_chunk(player.global_position))
+	_recalculate_needed(_world_to_chunk(player.global_position))
 
 
 ## Oculta el borde real del mundo (fin de far_distance) detrás de niebla,

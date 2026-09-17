@@ -12,13 +12,17 @@ config_version=5
 
 config/name="fps_base"
 run/main_scene="uid://c88oo28gk3c7m"
-config/features=PackedStringArray("4.6", "Forward Plus")
+config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
 WorldSeed="*uid://bsmv5y10b8s32"
 Global="*uid://b02o2ykyuj6bk"
+
+[filesystem]
+
+import/blender/enabled=false
 
 [input]
 
