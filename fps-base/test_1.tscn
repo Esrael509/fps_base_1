@@ -1,0 +1,102 @@
+[gd_scene format=3 uid="uid://c88oo28gk3c7m"]
+
+[ext_resource type="Texture2D" uid="uid://bpsoncyoy5gtr" path="res://Imagenes/citrus_orchard_road_puresky_4k.exr" id="1_6yos3"]
+[ext_resource type="BoxMesh" uid="uid://d02o3w81i24yt" path="res://cubo_1.tres" id="4_mtr5u"]
+[ext_resource type="PackedScene" uid="uid://d1mlbh52b6dei" path="res://fps_controller.tscn" id="5_hnega"]
+[ext_resource type="BoxMesh" uid="uid://d064k56nfwgsd" path="res://objetos/plataforma_alta.tres" id="5_htsna"]
+[ext_resource type="Script" uid="uid://d1h8pii2yr41t" path="res://terrain/chunk_manager.gd" id="6_htsna"]
+[ext_resource type="ArrayOccluder3D" uid="uid://gtk5vomk68t1" path="res://occluders/test_1.occ" id="6_mtr5u"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_jx2ws"]
+panorama = ExtResource("1_6yos3")
+
+[sub_resource type="Sky" id="Sky_ar7m3"]
+sky_material = SubResource("PanoramaSkyMaterial_jx2ws")
+
+[sub_resource type="Environment" id="Environment_0mw3u"]
+background_mode = 2
+sky = SubResource("Sky_ar7m3")
+ambient_light_source = 3
+tonemap_mode = 2
+
+[sub_resource type="Compositor" id="Compositor_v657l"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_htsna"]
+albedo_color = Color(0.29219002, 0.29219005, 0.29219002, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mtr5u"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hnega"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mtr5u"]
+albedo_color = Color(0.11916105, 0.12688935, 0.13654724, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jx2ws"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hnega"]
+albedo_color = Color(0.04755766, 0.047557645, 0.047557645, 1)
+
+[node name="Node3D" type="Node3D" unique_id=1204073495]
+
+[node name="CharacterBody3D" parent="." unique_id=170076410 instance=ExtResource("5_hnega")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 26.251232, 0)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=19997305]
+environment = SubResource("Environment_0mw3u")
+compositor = SubResource("Compositor_v657l")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="WorldEnvironment" unique_id=228146223]
+transform = Transform3D(0.5188871, 0.27017114, 0.8110265, -0.6584016, 0.7314164, 0.17758782, -0.5452189, -0.62612903, 0.55740345, 0, 30.243013, 0)
+sky_mode = 1
+
+[node name="Cubo2" type="MeshInstance3D" parent="." unique_id=1942516349]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.766525, 26.850456, 3.721085)
+mesh = ExtResource("4_mtr5u")
+surface_material_override/0 = SubResource("StandardMaterial3D_htsna")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Cubo2" unique_id=1060444901]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Cubo2/StaticBody3D" unique_id=414739738]
+shape = SubResource("BoxShape3D_mtr5u")
+
+[node name="Cubo3" type="MeshInstance3D" parent="." unique_id=42235994]
+transform = Transform3D(24.57086, 0, 0, 0, 1, 0, 0, 0, 31.211191, -0.4105432, 25.822855, 3.721085)
+mesh = ExtResource("4_mtr5u")
+surface_material_override/0 = SubResource("StandardMaterial3D_htsna")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Cubo3" unique_id=1588975794]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Cubo3/StaticBody3D" unique_id=251219662]
+shape = SubResource("BoxShape3D_hnega")
+
+[node name="PlataformaAlta" type="MeshInstance3D" parent="." unique_id=388236902]
+transform = Transform3D(3.473, 0, 0, 0, 0.49999997, 0, 0, 0, 7.974, -6.093, 28.339653, -5.791)
+mesh = ExtResource("5_htsna")
+surface_material_override/0 = SubResource("StandardMaterial3D_mtr5u")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="PlataformaAlta" unique_id=1388750614]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlataformaAlta/StaticBody3D" unique_id=928984076]
+shape = SubResource("BoxShape3D_jx2ws")
+
+[node name="PlataformaBaja" type="MeshInstance3D" parent="." unique_id=624883896]
+transform = Transform3D(3.473, 0, 0, 0, 0.49999997, 0, 0, 0, 7.974, -6.093, 27.839653, 3.3530002)
+mesh = ExtResource("5_htsna")
+surface_material_override/0 = SubResource("StandardMaterial3D_hnega")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="PlataformaBaja" unique_id=1200874151]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlataformaBaja/StaticBody3D" unique_id=1059031882]
+shape = SubResource("BoxShape3D_jx2ws")
+
+[node name="ChunkManager" type="Node3D" parent="." unique_id=782091514]
+script = ExtResource("6_htsna")
+player_path = NodePath("..")
+collision_distance = 5
+camera_path = NodePath("../CharacterBody3D")
+world_environment_path = NodePath("../WorldEnvironment")
+metadata/_custom_type_script = "uid://d1h8pii2yr41t"
+
+[node name="OccluderInstance3D" type="OccluderInstance3D" parent="." unique_id=133491607]
+layers = 3
+occluder = ExtResource("6_mtr5u")

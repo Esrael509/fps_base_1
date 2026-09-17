@@ -1,0 +1,502 @@
+[gd_scene format=3 uid="uid://d1mlbh52b6dei"]
+
+[ext_resource type="Theme" uid="uid://c6gi75j1bvos7" path="res://ui/themes/debug.tres" id="1_gsxsw"]
+[ext_resource type="Script" uid="uid://brdc41pwfelgr" path="res://Reticle.gd" id="1_ja5wc"]
+[ext_resource type="Script" uid="uid://b0jxt77rygsx7" path="res://scripts/debug.gd" id="2_xfl77"]
+[ext_resource type="Script" uid="uid://d4a6l1w5508wn" path="res://scripts/state_machine.gd" id="4_xfl77"]
+[ext_resource type="Script" uid="uid://b5cq8k0ptu2na" path="res://scripts/IdlePlayerState.gd" id="5_ics4w"]
+[ext_resource type="Script" uid="uid://dxnwmb4qltd7r" path="res://scripts/WalkingPlayerState.gd" id="6_txw7i"]
+[ext_resource type="Script" uid="uid://cohpk1ua6okbt" path="res://scripts/SprintingPlayerState.gd" id="7_5o7i3"]
+
+[sub_resource type="GDScript" id="GDScript_j0767"]
+script/source = "extends CharacterBody3D
+
+@export var SPEED_DEFAULT : float = 5.0
+@export var SPEED_SPRINTING : float = 12.0
+@export var SPEED_CROUCH : float = 2.0
+@export var TOGGLE_CROUCH : bool = true
+@export var ACCELERATION : float = 0.1
+@export var DECELERATION : float = 0.25
+@export var JUMP_VELOCITY : float = 4.5
+@export_range(5, 10, 0.1) var CROUCH_SPEED : float = 7.0
+@export var MOUSE_SENSITIVITY : float = 0.5
+@export var TILT_LOWER_LIMIT := deg_to_rad(-89.0)
+@export var TILT_UPPER_LIMIT := deg_to_rad(89.0)
+@export var CAMERA_CONTROLLER : Node3D
+@export var ANIMATIONPLAYER : AnimationPlayer
+@export var CROUCH_SHAPECAST : Node3D
+
+var _speed : float
+var _mouse_rotation : Vector3
+var _rotation_input : float
+var _tilt_input : float
+var _player_rotation : Vector3
+var _camera_rotation : Vector3
+var _is_crouching : bool = false
+
+
+func _ready():
+	Global.player = self
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_speed = SPEED_DEFAULT
+
+	if CROUCH_SHAPECAST:
+		CROUCH_SHAPECAST.add_exception(self)
+
+
+func _input(event):
+	if event.is_action_pressed(\"salir\"):
+		get_tree().quit()
+
+	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		_rotation_input = -event.relative.x * MOUSE_SENSITIVITY
+		_tilt_input = -event.relative.y * MOUSE_SENSITIVITY
+
+	if TOGGLE_CROUCH:
+		if event.is_action_pressed(\"agacharse\") and is_on_floor():
+			_toggle_crouch()
+	else:
+		if event.is_action_pressed(\"agacharse\") and is_on_floor() and not _is_crouching:
+			_set_crouching(true)
+		elif event.is_action_released(\"agacharse\") and _is_crouching:
+			_set_crouching(false)
+
+
+func _physics_process(delta: float) -> void:
+	Global.debug.add_property(\"MovementSpeed\", _speed, 1)
+	Global.debug.add_property(
+	\"CameraRotation\",
+	Vector3(
+		rad_to_deg(_mouse_rotation.x),
+		rad_to_deg(_mouse_rotation.y),
+		0
+	),
+	0
+)
+	
+	# Agregar la gravedad y el chequeo anti-caída
+	if not is_on_floor():
+		var space_state = get_world_3d().direct_space_state
+		
+		var query = PhysicsRayQueryParameters3D.create(
+			global_position + Vector3(0, 1, 0), 
+			global_position + Vector3(0, -1000, 0)
+		)
+		var result = space_state.intersect_ray(query)
+		
+		if result.is_empty():
+			# Congelamos solo la caída (eje Y) para no frenar tu movimiento en X/Z
+			velocity.y = 0 
+		else:
+			velocity += get_gravity() * delta
+
+	_update_camera(delta)
+	_update_movement(delta)
+
+	move_and_slide()
+
+
+func _update_camera(delta):
+	
+	_mouse_rotation.x += _tilt_input * delta
+	_mouse_rotation.x = clamp(_mouse_rotation.x, TILT_LOWER_LIMIT, TILT_UPPER_LIMIT)
+	_mouse_rotation.y += _rotation_input * delta
+
+	_player_rotation = Vector3(0.0, _mouse_rotation.y, 0.0)
+	_camera_rotation = Vector3(_mouse_rotation.x, 0.0, 0.0)
+
+	if CAMERA_CONTROLLER:
+		CAMERA_CONTROLLER.transform.basis = Basis.from_euler(_camera_rotation)
+		CAMERA_CONTROLLER.rotation.z = 0.0
+
+	global_transform.basis = Basis.from_euler(_player_rotation)
+
+	_rotation_input = 0.0
+	_tilt_input = 0.0
+
+
+func _update_movement(_delta):
+	# Salto.
+	if Input.is_action_just_pressed(\"ui_accept\") and is_on_floor() and not _is_crouching:
+		velocity.y = JUMP_VELOCITY
+
+	# Movimiento horizontal.
+	# Buena práctica: reemplaza las acciones \"ui_*\" por acciones propias del juego.
+	var input_dir := Input.get_vector(\"izquierda\", \"derecha\", \"adelante\", \"atras\")
+	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+
+	if direction:
+		velocity.x = lerp(velocity.x, direction.x * _speed, ACCELERATION)
+		velocity.z = lerp(velocity.z, direction.z * _speed, ACCELERATION)
+	else:
+		velocity.x = move_toward(velocity.x, 0, DECELERATION)
+		velocity.z = move_toward(velocity.z, 0, DECELERATION)
+
+
+func _toggle_crouch():
+	if _is_crouching and (not CROUCH_SHAPECAST or not CROUCH_SHAPECAST.is_colliding()):
+		_set_crouching(false)
+	elif not _is_crouching:
+		_set_crouching(true)
+
+
+func _set_crouching(state: bool):
+	if not ANIMATIONPLAYER:
+		_is_crouching = state
+		_speed = SPEED_CROUCH if state else SPEED_DEFAULT
+		return
+
+	if state:
+		ANIMATIONPLAYER.play(\"Agacharse\", 0, CROUCH_SPEED)
+		_speed = SPEED_CROUCH
+	else:
+		ANIMATIONPLAYER.play(\"Agacharse\", 0, -CROUCH_SPEED, true)
+		_speed = SPEED_DEFAULT
+
+
+func _on_animation_player_animation_started(anim_name):
+	if anim_name == \"Agacharse\":
+		_is_crouching = not _is_crouching
+"
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_j0767"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_ja5wc"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_j0767"]
+albedo_color = Color(0, 1, 1, 1)
+
+[sub_resource type="Animation" id="Animation_j0767"]
+resource_name = "Agacharse"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("CollisionShape3D:shape:height")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [2.0, 1.5]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("CollisionShape3D:position")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(0, 1, 0), Vector3(0, 0.75, 0)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("CameraController:position")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(0, 1.5, 0), Vector3(0, 1, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_ja5wc"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("CollisionShape3D:shape:height")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [2.0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("CollisionShape3D:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 1.1471186, 0)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("CameraController:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 1.5, 0)]
+}
+tracks/3/type = "bezier"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("CameraController:position:x")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/4/type = "bezier"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("CameraController:position:y")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(1.5, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/5/type = "bezier"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("CameraController:position:z")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/6/type = "bezier"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("CameraController/Camera3D:position:x")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/7/type = "bezier"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("CameraController/Camera3D:position:y")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+tracks/8/type = "bezier"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("CameraController/Camera3D:position:z")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+
+[sub_resource type="Animation" id="Animation_5o7i3"]
+resource_name = "Sprinting"
+tracks/0/type = "bezier"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("CameraController/Camera3D:position:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"handle_modes": PackedInt32Array(2, 2, 2),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 0, -0.083333336, 0, 0.083333336, 0, 0, -0.083333336, 0, 0, 0),
+"times": PackedFloat32Array(0, 0.5, 1)
+}
+tracks/1/type = "bezier"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("CameraController/Camera3D:position:y")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"handle_modes": PackedInt32Array(2, 2, 2),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 0.1, -0.083333336, 0, 0.083333336, 0, 0, -0.083333336, 0.016666668, 0, 0),
+"times": PackedFloat32Array(0, 0.5, 1)
+}
+tracks/2/type = "bezier"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("CameraController/Camera3D:position:z")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"handle_modes": PackedInt32Array(2, 2, 2),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 0.1, -0.083333336, 0, 0.083333336, 0, 0, -0.083333336, 0, 0, 0),
+"times": PackedFloat32Array(0, 0.5, 1)
+}
+
+[sub_resource type="Animation" id="Animation_txw7i"]
+resource_name = "Walking"
+length = 2.0
+loop_mode = 1
+tracks/0/type = "bezier"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("CameraController:position:x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"handle_modes": PackedInt32Array(2, 2, 2, 2, 2),
+"points": PackedFloat32Array(0, 0, 0, 0.083333336, 0, 0, -0.083333336, 0, 0.083333336, 0, 0, -0.083333336, 0, 0.083333336, 0, 0, -0.083333336, 0, 0.083333336, 0, 0, -0.083333336, 0, 0, 0),
+"times": PackedFloat32Array(0, 0.5, 1, 1.5, 2)
+}
+tracks/1/type = "bezier"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("CameraController:position:y")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"handle_modes": PackedInt32Array(2, 2, 2, 2, 2),
+"points": PackedFloat32Array(1.5, 0, 0, 0.083333336, -0.008333325, 1.45, -0.083333336, 0, 0.083333336, 0, 1.5, -0.083333336, 0.004166673, 0.083333336, -0.004166673, 1.45, -0.083333336, 0, 0.083333336, 0, 1.5, -0.083333336, -0.008333325, 0, 0),
+"times": PackedFloat32Array(0, 0.5, 1, 1.5, 2)
+}
+tracks/2/type = "bezier"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("CameraController:position:z")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"handle_modes": PackedInt32Array(2, 2, 2, 2, 2),
+"points": PackedFloat32Array(0, 0, 0, 0.083333336, 0, 0, -0.083333336, 0, 0.083333336, 0, 0, -0.083333336, 0, 0.083333336, 0, 0, -0.083333336, 0, 0.083333336, 0, 0, -0.083333336, 0, 0, 0),
+"times": PackedFloat32Array(0, 0.5, 1, 1.5, 2)
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_umbl3"]
+_data = {
+&"Agacharse": SubResource("Animation_j0767"),
+&"RESET": SubResource("Animation_ja5wc"),
+&"Sprinting": SubResource("Animation_5o7i3"),
+&"Walking": SubResource("Animation_txw7i")
+}
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_j0767"]
+
+[node name="CharacterBody3D" type="CharacterBody3D" unique_id=170076410 node_paths=PackedStringArray("CAMERA_CONTROLLER", "ANIMATIONPLAYER", "CROUCH_SHAPECAST")]
+script = SubResource("GDScript_j0767")
+CAMERA_CONTROLLER = NodePath("CameraController")
+ANIMATIONPLAYER = NodePath("AnimationPlayer")
+CROUCH_SHAPECAST = NodePath("ShapeCast3D")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=103265215]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1471186, 0)
+shape = SubResource("CapsuleShape3D_j0767")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CollisionShape3D" unique_id=327455759]
+mesh = SubResource("CapsuleMesh_ja5wc")
+surface_material_override/0 = SubResource("StandardMaterial3D_j0767")
+
+[node name="CameraController" type="Node3D" parent="." unique_id=457339003]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="Camera3D" type="Camera3D" parent="CameraController" unique_id=1193338540]
+far = 700.0
+
+[node name="ReflectionProbe" type="ReflectionProbe" parent="CameraController/Camera3D" unique_id=662346149]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1118008852]
+libraries/ = SubResource("AnimationLibrary_umbl3")
+
+[node name="ShapeCast3D" type="ShapeCast3D" parent="." unique_id=1900459823]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("SphereShape3D_j0767")
+target_position = Vector3(0, 0.5, 0)
+debug_shape_custom_color = Color(0, 0.7543013, 7.70092e-07, 1)
+
+[node name="UserInterface" type="Control" parent="." unique_id=1843620627]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="UserInterface" unique_id=766873754 node_paths=PackedStringArray("RETICLE_LINES", "PLAYER_CONTROLLER")]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ja5wc")
+RETICLE_LINES = [NodePath("Arriba"), NodePath("Derecha"), NodePath("Abajo"), NodePath("Izquierda")]
+PLAYER_CONTROLLER = NodePath("../..")
+
+[node name="Arriba" type="Line2D" parent="UserInterface/CenterContainer" unique_id=414478828]
+points = PackedVector2Array(0, -5, 0, -15)
+width = 2.0
+
+[node name="Abajo" type="Line2D" parent="UserInterface/CenterContainer" unique_id=1607605048]
+points = PackedVector2Array(0, 5, 0, 15)
+width = 2.0
+
+[node name="Derecha" type="Line2D" parent="UserInterface/CenterContainer" unique_id=1631659000]
+points = PackedVector2Array(5, 0, 15, 0)
+width = 2.0
+
+[node name="Izquierda" type="Line2D" parent="UserInterface/CenterContainer" unique_id=1938841758]
+points = PackedVector2Array(-5, 0, -15, 0)
+width = 2.0
+
+[node name="DebugPanel" type="PanelContainer" parent="UserInterface" unique_id=1078975054]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 220.0
+offset_bottom = 60.0
+theme = ExtResource("1_gsxsw")
+script = ExtResource("2_xfl77")
+
+[node name="MarginContainer" type="MarginContainer" parent="UserInterface/DebugPanel" unique_id=1257237864]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UserInterface/DebugPanel/MarginContainer" unique_id=2001519124]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PlayerStateMachine" type="Node" parent="." unique_id=1193058297 node_paths=PackedStringArray("CURRENT_STATE")]
+script = ExtResource("4_xfl77")
+CURRENT_STATE = NodePath("IdlePlayerState")
+
+[node name="WalkingPlayerState" type="Node" parent="PlayerStateMachine" unique_id=817653577 node_paths=PackedStringArray("ANIMATION")]
+script = ExtResource("6_txw7i")
+ANIMATION = NodePath("../../AnimationPlayer")
+
+[node name="IdlePlayerState" type="Node" parent="PlayerStateMachine" unique_id=198443480 node_paths=PackedStringArray("ANIMATION")]
+script = ExtResource("5_ics4w")
+ANIMATION = NodePath("../../AnimationPlayer")
+
+[node name="SprintingPlayerState" type="Node" parent="PlayerStateMachine" unique_id=166476218 node_paths=PackedStringArray("ANIMATION")]
+script = ExtResource("7_5o7i3")
+ANIMATION = NodePath("../../AnimationPlayer")
+
+[connection signal="animation_started" from="AnimationPlayer" to="." method="_on_animation_player_animation_started"]
