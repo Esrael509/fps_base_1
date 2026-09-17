@@ -44,7 +44,7 @@ func _ready() -> void:
 
 	var start := player.global_position
 	start.y = TerrainGenerator.get_height(start.x, start.z) + 2.0
-	player.global_position = start
+	#player.global_position = start
 
 	#_apply_visual_range()
 	_recalculate_needed(_world_to_chunk(player.global_position))
