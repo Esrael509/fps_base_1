@@ -14,8 +14,8 @@ extends Node3D
 @export var render_distance: int = 1     # radio (en chunks) con malla de máximo detalle
 @export var far_distance: int = 5       # radio con LOD reducido (sin colisión)
 @export var collision_distance: int = 2  # radio con collider físico activo
-@export var world_seed: int = 987651
-@export var max_far_chunks_per_frame: int = 8  # throttle SOLO para lo no-crítico
+@export var world_seed: int = 12345
+@export var max_far_chunks_per_frame: int = 16  # throttle SOLO para lo no-crítico
 
 @export_group("Rango visual (opcional, recomendado)")
 @export var camera_path: NodePath            # tu Camera3D -> ajusta el far clip automáticamente

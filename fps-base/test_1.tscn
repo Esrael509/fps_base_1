@@ -43,7 +43,7 @@ collision_distance = 5
 world_seed = 4387213
 
 [node name="CharacterBody3D" parent="." instance=ExtResource("5_hnega")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 26.251232, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 26.268057, 0)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_0mw3u")
@@ -93,14 +93,8 @@ surface_material_override/0 = SubResource("StandardMaterial3D_hnega")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="PlataformaBaja/StaticBody3D"]
 shape = SubResource("BoxShape3D_jx2ws")
 
-[node name="ChunkManager" type="Node3D" parent="."]
-script = ExtResource("6_htsna")
-player_path = NodePath("../CharacterBody3D")
-collision_distance = 5
-camera_path = NodePath("../CharacterBody3D")
-world_environment_path = NodePath("../WorldEnvironment")
-metadata/_custom_type_script = "uid://d1h8pii2yr41t"
-
 [node name="OccluderInstance3D" type="OccluderInstance3D" parent="."]
 layers = 3
 occluder = ExtResource("6_mtr5u")
+
+[editable path="CharacterBody3D"]
