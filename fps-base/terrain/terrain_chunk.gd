@@ -91,19 +91,30 @@ func _generate_threaded(cx: int, cz: int, res: int, with_collision: bool, gen_id
 	var colors := PackedColorArray()
 	colors.resize(count)
 
+	# OPTIMIZACIÓN: antes se llamaba get_height() y get_color() por
+	# separado para el mismo vértice, y cada una repetía desde cero el
+	# domain warp + el ruido de elevación/humedad + el cálculo de pesos
+	# de bioma. sample_terrain() hace todo ese trabajo una sola vez por
+	# vértice (altura y color salen del mismo pase de ruido).
 	for zi in range(res + 1):
 		for xi in range(res + 1):
 			var wx := cx * CHUNK_SIZE + xi * step
 			var wz := cz * CHUNK_SIZE + zi * step
 			var idx := zi * (res + 1) + xi
-			heights[idx] = TerrainGenerator.get_height(wx, wz)
-			colors[idx] = TerrainGenerator.get_color(wx, wz)
+			var s := TerrainGenerator.sample_terrain(wx, wz)
+			heights[idx] = s.height
+			colors[idx] = s.color
 
 	var arrays := _build_surface_arrays(heights, colors, res, step)
+	
+	# --- OPTIMIZACIÓN: Construir la malla y normales EN EL HILO SECUNDARIO ---
+	var temp_mesh := ArrayMesh.new()
+	temp_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var st := SurfaceTool.new()
+	st.create_from(temp_mesh, 0)
+	st.generate_normals()
+	var final_mesh: ArrayMesh = st.commit()
 
-	# Heightmap de colisión: SIEMPRE con espaciado de 1 unidad, porque
-	# HeightMapShape3D asume exactamente eso. Así no hace falta escalar
-	# ningún nodo de física (escalar cuerpos en Godot da problemas).
 	var coll_heights := PackedFloat32Array()
 	if with_collision:
 		var n := COLLISION_SAMPLES
@@ -118,8 +129,8 @@ func _generate_threaded(cx: int, cz: int, res: int, with_collision: bool, gen_id
 	if lod == 0:
 		veg_data = _scatter_vegetation(cx, cz)
 
-	call_deferred("_apply_generated_data", arrays, coll_heights, with_collision, veg_data, gen_id)
-
+	# Enviamos la malla ya procesada al hilo principal
+	call_deferred("_apply_generated_data", final_mesh, coll_heights, with_collision, veg_data, gen_id)
 
 func _build_surface_arrays(heights: PackedFloat32Array, colors: PackedColorArray, res: int, step: float) -> Array:
 	var verts := PackedVector3Array()
@@ -175,15 +186,20 @@ func _scatter_vegetation(cx: int, cz: int) -> Dictionary:
 			var wx := cx * CHUNK_SIZE + lx
 			var wz := cz * CHUNK_SIZE + lz
 
-			var biome := TerrainGenerator.get_dominant_biome(wx, wz)
+			# OPTIMIZACIÓN: un solo sample_terrain() para bioma + altura del
+			# punto candidato, en vez de get_dominant_biome() + get_height()
+			# por separado (cada una repetía el warp/ruido de elevación).
+			var sample := TerrainGenerator.sample_terrain(wx, wz)
+			var biome: int = sample.biome
 			var density := _vegetation_density(biome)
 			if density <= 0.0:
 				continue
 			if WorldSeed.hash01(int(wx * 10.0), int(wz * 10.0), 33) > density:
 				continue
 
-			var h := TerrainGenerator.get_height(wx, wz)
+			var h: float = sample.height
 			# no poner vegetación en pendientes muy pronunciadas
+			# (get_height liviano: no hace falta el color para esto)
 			var slope_x := TerrainGenerator.get_height(wx + 1.0, wz) - h
 			var slope_z := TerrainGenerator.get_height(wx, wz + 1.0) - h
 			if abs(slope_x) > 1.5 or abs(slope_z) > 1.5:
@@ -215,19 +231,14 @@ func _vegetation_density(biome: int) -> float:
 # ============================================================
 # De vuelta en el hilo principal: aquí SÍ se puede tocar la escena.
 # ============================================================
-func _apply_generated_data(arrays: Array, coll_heights: PackedFloat32Array,
+func _apply_generated_data(final_mesh: ArrayMesh, coll_heights: PackedFloat32Array,
 		with_collision: bool, veg_data: Dictionary, gen_id: int) -> void:
-	# si el chunk fue reciclado para otra coordenada mientras generábamos, descartar
+	
 	if gen_id != _generation_id:
 		return
 
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-
-	var st := SurfaceTool.new()
-	st.create_from(mesh, 0)
-	st.generate_normals()
-	mesh_instance.mesh = st.commit()
+	# Asignación directa e inmediata (0 impacto en CPU)
+	mesh_instance.mesh = final_mesh
 
 	if with_collision:
 		var shape := HeightMapShape3D.new()
@@ -235,32 +246,13 @@ func _apply_generated_data(arrays: Array, coll_heights: PackedFloat32Array,
 		shape.map_depth = COLLISION_SAMPLES
 		shape.map_data = coll_heights
 		collision_shape.shape = shape
-		# HeightMapShape3D se centra en su origen (va de -w/2 a +w/2), pero la
-		# malla va de 0 a CHUNK_SIZE. Desplazamos media chunk para alinearlos.
 		var half := float(COLLISION_SAMPLES - 1) * 0.5
 		collision_shape.position = Vector3(half, 0.0, half)
-		static_body.scale = Vector3.ONE  # nunca escalar cuerpos de física
+		static_body.scale = Vector3.ONE 
 		collision_shape.disabled = false
 	else:
 		collision_shape.shape = null
 		collision_shape.disabled = true
-
-	for biome in veg_data.keys():
-		var transforms: Array = veg_data[biome]
-		if transforms.is_empty():
-			continue
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = _get_vegetation_mesh(biome)
-		mm.instance_count = transforms.size()
-		for i in range(transforms.size()):
-			mm.set_instance_transform(i, transforms[i])
-		var mmi := MultiMeshInstance3D.new()
-		mmi.multimesh = mm
-		mmi.material_override = _get_vegetation_material(biome)
-		add_child(mmi)
-		veg_multimeshes.append(mmi)
-
 
 ## Ruta del shader toon. Si lo guardaste en otra carpeta, cambiá esto.
 const TOON_SHADER_PATH := "res://terrain/terrain_toon.gdshader"
