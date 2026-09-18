@@ -1,6 +1,6 @@
 extends Node
 
-var seed_value: int = 65384
+var seed_value: int = 4563
 
 # 1. Instanciamos los objetos de ruido de entrada
 var elevation_noise: FastNoiseLite = FastNoiseLite.new()

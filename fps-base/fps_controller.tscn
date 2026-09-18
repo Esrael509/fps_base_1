@@ -1,5 +1,6 @@
-[gd_scene load_steps=13 format=3 uid="uid://d1mlbh52b6dei"]
+[gd_scene format=3 uid="uid://d1mlbh52b6dei"]
 
+[ext_resource type="AnimationLibrary" uid="uid://ba6113kjij7bx" path="res://animaciones.res" id="1_d5ea2"]
 [ext_resource type="Theme" uid="uid://c6gi75j1bvos7" path="res://ui/themes/debug.tres" id="1_gsxsw"]
 [ext_resource type="Script" uid="uid://brdc41pwfelgr" path="res://Reticle.gd" id="1_ja5wc"]
 [ext_resource type="Script" uid="uid://b0jxt77rygsx7" path="res://scripts/debug.gd" id="2_xfl77"]
@@ -156,37 +157,38 @@ albedo_color = Color(0, 1, 1, 1)
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_j0767"]
 
-[node name="CharacterBody3D" type="CharacterBody3D" node_paths=PackedStringArray("CAMERA_CONTROLLER", "ANIMATIONPLAYER", "CROUCH_SHAPECAST")]
+[node name="CharacterBody3D" type="CharacterBody3D" unique_id=1224668502 node_paths=PackedStringArray("CAMERA_CONTROLLER", "ANIMATIONPLAYER", "CROUCH_SHAPECAST")]
 script = SubResource("GDScript_j0767")
 CAMERA_CONTROLLER = NodePath("CameraController")
 ANIMATIONPLAYER = NodePath("AnimationPlayer")
 CROUCH_SHAPECAST = NodePath("ShapeCast3D")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2078281656]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1471186, 0)
 shape = SubResource("CapsuleShape3D_j0767")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="CollisionShape3D"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CollisionShape3D" unique_id=551154954]
 mesh = SubResource("CapsuleMesh_ja5wc")
 surface_material_override/0 = SubResource("StandardMaterial3D_j0767")
 
-[node name="CameraController" type="Node3D" parent="."]
+[node name="CameraController" type="Node3D" parent="." unique_id=753054241]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 
-[node name="Camera3D" type="Camera3D" parent="CameraController"]
+[node name="Camera3D" type="Camera3D" parent="CameraController" unique_id=1243251111]
 far = 700.0
 
-[node name="ReflectionProbe" type="ReflectionProbe" parent="CameraController/Camera3D"]
+[node name="ReflectionProbe" type="ReflectionProbe" parent="CameraController/Camera3D" unique_id=1287028991]
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1531208059]
+libraries/ = ExtResource("1_d5ea2")
 
-[node name="ShapeCast3D" type="ShapeCast3D" parent="."]
+[node name="ShapeCast3D" type="ShapeCast3D" parent="." unique_id=571422043]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 shape = SubResource("SphereShape3D_j0767")
 target_position = Vector3(0, 0.5, 0)
 debug_shape_custom_color = Color(0, 0.7543013, 7.70092e-07, 1)
 
-[node name="UserInterface" type="Control" parent="."]
+[node name="UserInterface" type="Control" parent="." unique_id=1319395854]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -194,7 +196,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="CenterContainer" type="CenterContainer" parent="UserInterface" node_paths=PackedStringArray("RETICLE_LINES", "PLAYER_CONTROLLER")]
+[node name="CenterContainer" type="CenterContainer" parent="UserInterface" unique_id=1028124065 node_paths=PackedStringArray("RETICLE_LINES", "PLAYER_CONTROLLER")]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -211,23 +213,23 @@ script = ExtResource("1_ja5wc")
 RETICLE_LINES = [NodePath("Arriba"), NodePath("Derecha"), NodePath("Abajo"), NodePath("Izquierda")]
 PLAYER_CONTROLLER = NodePath("../..")
 
-[node name="Arriba" type="Line2D" parent="UserInterface/CenterContainer"]
+[node name="Arriba" type="Line2D" parent="UserInterface/CenterContainer" unique_id=424107167]
 points = PackedVector2Array(0, -5, 0, -15)
 width = 2.0
 
-[node name="Abajo" type="Line2D" parent="UserInterface/CenterContainer"]
+[node name="Abajo" type="Line2D" parent="UserInterface/CenterContainer" unique_id=927459546]
 points = PackedVector2Array(0, 5, 0, 15)
 width = 2.0
 
-[node name="Derecha" type="Line2D" parent="UserInterface/CenterContainer"]
+[node name="Derecha" type="Line2D" parent="UserInterface/CenterContainer" unique_id=1305779978]
 points = PackedVector2Array(5, 0, 15, 0)
 width = 2.0
 
-[node name="Izquierda" type="Line2D" parent="UserInterface/CenterContainer"]
+[node name="Izquierda" type="Line2D" parent="UserInterface/CenterContainer" unique_id=979548118]
 points = PackedVector2Array(-5, 0, -15, 0)
 width = 2.0
 
-[node name="DebugPanel" type="PanelContainer" parent="UserInterface"]
+[node name="DebugPanel" type="PanelContainer" parent="UserInterface" unique_id=1456094008]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 0
 offset_left = 20.0
@@ -237,26 +239,26 @@ offset_bottom = 60.0
 theme = ExtResource("1_gsxsw")
 script = ExtResource("2_xfl77")
 
-[node name="MarginContainer" type="MarginContainer" parent="UserInterface/DebugPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="UserInterface/DebugPanel" unique_id=1929597237]
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="UserInterface/DebugPanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="UserInterface/DebugPanel/MarginContainer" unique_id=262321241]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="PlayerStateMachine" type="Node" parent="." node_paths=PackedStringArray("CURRENT_STATE")]
+[node name="PlayerStateMachine" type="Node" parent="." unique_id=1594201146 node_paths=PackedStringArray("CURRENT_STATE")]
 script = ExtResource("4_xfl77")
 CURRENT_STATE = NodePath("IdlePlayerState")
 
-[node name="WalkingPlayerState" type="Node" parent="PlayerStateMachine" node_paths=PackedStringArray("ANIMATION")]
+[node name="WalkingPlayerState" type="Node" parent="PlayerStateMachine" unique_id=751762011 node_paths=PackedStringArray("ANIMATION")]
 script = ExtResource("6_txw7i")
 ANIMATION = NodePath("../../AnimationPlayer")
 
-[node name="IdlePlayerState" type="Node" parent="PlayerStateMachine" node_paths=PackedStringArray("ANIMATION")]
+[node name="IdlePlayerState" type="Node" parent="PlayerStateMachine" unique_id=1544043873 node_paths=PackedStringArray("ANIMATION")]
 script = ExtResource("5_ics4w")
 ANIMATION = NodePath("../../AnimationPlayer")
 
-[node name="SprintingPlayerState" type="Node" parent="PlayerStateMachine" node_paths=PackedStringArray("ANIMATION")]
+[node name="SprintingPlayerState" type="Node" parent="PlayerStateMachine" unique_id=1206037349 node_paths=PackedStringArray("ANIMATION")]
 script = ExtResource("7_5o7i3")
 ANIMATION = NodePath("../../AnimationPlayer")
 

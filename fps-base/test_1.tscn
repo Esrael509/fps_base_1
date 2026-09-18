@@ -1,6 +1,9 @@
-[gd_scene load_steps=20 format=3 uid="uid://c88oo28gk3c7m"]
+[gd_scene format=3 uid="uid://c88oo28gk3c7m"]
 
 [ext_resource type="Texture2D" uid="uid://bpsoncyoy5gtr" path="res://Imagenes/citrus_orchard_road_puresky_4k.exr" id="1_6yos3"]
+[ext_resource type="Animation" uid="uid://4jdal8g3rle1" path="res://animaciones/Sprinting.res" id="3_ar7m3"]
+[ext_resource type="AnimationLibrary" path="res://animaciones.res" id="3_jx2ws"]
+[ext_resource type="Animation" uid="uid://cjsa8opyl10pv" path="res://animaciones/Walking.res" id="4_0mw3u"]
 [ext_resource type="BoxMesh" uid="uid://d02o3w81i24yt" path="res://cubo_1.tres" id="4_mtr5u"]
 [ext_resource type="PackedScene" uid="uid://d1mlbh52b6dei" path="res://fps_controller.tscn" id="5_hnega"]
 [ext_resource type="BoxMesh" uid="uid://d064k56nfwgsd" path="res://objetos/plataforma_alta.tres" id="5_htsna"]
@@ -173,6 +176,13 @@ func _get_from_pool_or_create() -> TerrainChunk:
 	return chunk
 "
 
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_jx2ws"]
+_data = {
+&"Sprinting": ExtResource("3_ar7m3"),
+&"Walking": ExtResource("4_0mw3u"),
+&"Walking 2": ExtResource("4_0mw3u")
+}
+
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_jx2ws"]
 panorama = ExtResource("1_6yos3")
 
@@ -214,7 +224,7 @@ expand_margin_top = 8.0
 expand_margin_right = 8.0
 expand_margin_bottom = 8.0
 
-[node name="Node3D" type="Node3D"]
+[node name="Node3D" type="Node3D" unique_id=1613159102]
 script = SubResource("GDScript_hnega")
 player_path = NodePath("CharacterBody3D")
 collision_distance = 5
@@ -222,69 +232,77 @@ world_seed = 34254
 camera_path = NodePath("CharacterBody3D/CameraController")
 world_environment_path = NodePath("WorldEnvironment")
 
-[node name="ChunkManager" type="Node3D" parent="."]
+[node name="ChunkManager" type="Node3D" parent="." unique_id=1180988411]
 script = ExtResource("6_htsna")
 player_path = NodePath("../CharacterBody3D")
+world_seed = 9357
 camera_path = NodePath("../CharacterBody3D/CameraController")
 world_environment_path = NodePath("../WorldEnvironment")
 metadata/_custom_type_script = "uid://dwhntd6kycjqc"
 
-[node name="CharacterBody3D" parent="." instance=ExtResource("5_hnega")]
+[node name="CharacterBody3D" parent="." unique_id=712624763 instance=ExtResource("5_hnega")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 26.268057, 0)
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="CollisionShape3D" parent="CharacterBody3D" index="0" unique_id=2078281656]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1471195, 0)
+
+[node name="AnimationPlayer" parent="CharacterBody3D" index="2" unique_id=1531208059]
+libraries/ = SubResource("AnimationLibrary_jx2ws")
+libraries/animaciones = ExtResource("3_jx2ws")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2042970618]
 environment = SubResource("Environment_0mw3u")
 compositor = SubResource("Compositor_v657l")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="WorldEnvironment"]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="WorldEnvironment" unique_id=2131045965]
 transform = Transform3D(1, 0, 0, 0, 0.9804089, 0.19697292, 0, -0.19697292, 0.9804089, 0, 30.243013, 0)
 sky_mode = 1
 
-[node name="Cubo2" type="MeshInstance3D" parent="."]
+[node name="Cubo2" type="MeshInstance3D" parent="." unique_id=1503717765]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.766525, 26.850456, 3.721085)
 mesh = ExtResource("4_mtr5u")
 surface_material_override/0 = SubResource("StandardMaterial3D_htsna")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Cubo2"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Cubo2" unique_id=243723551]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Cubo2/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Cubo2/StaticBody3D" unique_id=1970505855]
 shape = SubResource("BoxShape3D_mtr5u")
 
-[node name="Cubo3" type="MeshInstance3D" parent="."]
+[node name="Cubo3" type="MeshInstance3D" parent="." unique_id=2074532454]
 transform = Transform3D(24.57086, 0, 0, 0, 1, 0, 0, 0, 60.38365, -0.4105432, 25.822855, 3.721085)
 mesh = ExtResource("4_mtr5u")
 surface_material_override/0 = SubResource("StandardMaterial3D_htsna")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Cubo3"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Cubo3" unique_id=413372941]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Cubo3/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Cubo3/StaticBody3D" unique_id=427031843]
 shape = SubResource("BoxShape3D_hnega")
 
-[node name="PlataformaAlta" type="MeshInstance3D" parent="."]
+[node name="PlataformaAlta" type="MeshInstance3D" parent="." unique_id=1369987035]
 transform = Transform3D(3.473, 0, 0, 0, 0.49999997, 0, 0, 0, 7.974, -6.093, 28.339653, -5.791)
 mesh = ExtResource("5_htsna")
 surface_material_override/0 = SubResource("StandardMaterial3D_mtr5u")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="PlataformaAlta"]
+[node name="StaticBody3D" type="StaticBody3D" parent="PlataformaAlta" unique_id=1735515715]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="PlataformaAlta/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlataformaAlta/StaticBody3D" unique_id=1090872968]
 shape = SubResource("BoxShape3D_jx2ws")
 
-[node name="PlataformaBaja" type="MeshInstance3D" parent="."]
+[node name="PlataformaBaja" type="MeshInstance3D" parent="." unique_id=1086070920]
 transform = Transform3D(3.473, 0, 0, 0, 0.49999997, 0, 0, 0, 7.974, -6.093, 27.839653, 3.3530002)
 mesh = ExtResource("5_htsna")
 surface_material_override/0 = SubResource("StandardMaterial3D_hnega")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="PlataformaBaja"]
+[node name="StaticBody3D" type="StaticBody3D" parent="PlataformaBaja" unique_id=1663801553]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="PlataformaBaja/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlataformaBaja/StaticBody3D" unique_id=1923549399]
 shape = SubResource("BoxShape3D_jx2ws")
 
-[node name="OccluderInstance3D" type="OccluderInstance3D" parent="."]
+[node name="OccluderInstance3D" type="OccluderInstance3D" parent="." unique_id=1405511690]
 layers = 3
 occluder = ExtResource("6_mtr5u")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1060869821]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -295,23 +313,23 @@ theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="PanelContainer" type="PanelContainer" parent="MarginContainer"]
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer" unique_id=707884430]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_mtr5u")
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="MarginContainer/PanelContainer"]
+[node name="SubViewportContainer" type="SubViewportContainer" parent="MarginContainer/PanelContainer" unique_id=1021144783]
 custom_minimum_size = Vector2(180, 180)
 layout_mode = 2
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="MarginContainer/PanelContainer/SubViewportContainer"]
+[node name="SubViewport" type="SubViewport" parent="MarginContainer/PanelContainer/SubViewportContainer" unique_id=2147448416]
 handle_input_locally = false
 size = Vector2i(180, 180)
 render_target_update_mode = 4
 
-[node name="MinimapCamera" type="Camera3D" parent="MarginContainer/PanelContainer/SubViewportContainer/SubViewport" node_paths=PackedStringArray("_target")]
+[node name="MinimapCamera" type="Camera3D" parent="MarginContainer/PanelContainer/SubViewportContainer/SubViewport" unique_id=325851796 node_paths=PackedStringArray("_target")]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 37.784683, 0)
 script = ExtResource("7_mtr5u")
 _target = NodePath("../../../../../CharacterBody3D")
