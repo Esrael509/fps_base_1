@@ -17,7 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-WorldSeed="*uid://bsmv5y10b8s32"
+WorldSeed="*res://terrain/world_seed.gd"
 Global="*uid://b02o2ykyuj6bk"
 
 [filesystem]

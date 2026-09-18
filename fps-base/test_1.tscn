@@ -179,6 +179,7 @@ panorama = ExtResource("1_6yos3")
 sky_material = SubResource("PanoramaSkyMaterial_jx2ws")
 
 [sub_resource type="Environment" id="Environment_0mw3u"]
+resource_local_to_scene = true
 background_mode = 2
 sky = SubResource("Sky_ar7m3")
 ambient_light_source = 3
@@ -208,6 +209,13 @@ collision_distance = 5
 world_seed = 4387213
 camera_path = NodePath("CharacterBody3D/CameraController")
 world_environment_path = NodePath("WorldEnvironment")
+
+[node name="ChunkManager" type="Node3D" parent="."]
+script = ExtResource("6_htsna")
+player_path = NodePath("../CharacterBody3D")
+camera_path = NodePath("../CharacterBody3D/CameraController")
+world_environment_path = NodePath("../WorldEnvironment")
+metadata/_custom_type_script = "uid://dwhntd6kycjqc"
 
 [node name="CharacterBody3D" parent="." instance=ExtResource("5_hnega")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 26.268057, 0)
@@ -263,12 +271,5 @@ shape = SubResource("BoxShape3D_jx2ws")
 [node name="OccluderInstance3D" type="OccluderInstance3D" parent="."]
 layers = 3
 occluder = ExtResource("6_mtr5u")
-
-[node name="ChunkManager" type="Node3D" parent="."]
-script = ExtResource("6_htsna")
-player_path = NodePath("../CharacterBody3D")
-camera_path = NodePath("../CharacterBody3D/CameraController")
-world_environment_path = NodePath("../WorldEnvironment")
-metadata/_custom_type_script = "uid://dwhntd6kycjqc"
 
 [editable path="CharacterBody3D"]

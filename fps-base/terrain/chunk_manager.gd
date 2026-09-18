@@ -44,9 +44,9 @@ func _ready() -> void:
 
 	var start := player.global_position
 	start.y = TerrainGenerator.get_height(start.x, start.z) + 2.0
-	#player.global_position = start
+	player.global_position = start
 
-	#_apply_visual_range()
+	_apply_visual_range()
 	_recalculate_needed(_world_to_chunk(player.global_position))
 
 
@@ -54,22 +54,22 @@ func _ready() -> void:
 ## y recorta el far-clip de la cámara para no gastar fillrate dibujando
 ## hacia donde no hay geometría. Se recalcula solo, así que si cambiás
 ## far_distance en el inspector no hace falta tocar nada más a mano.
-#func _apply_visual_range() -> void:
-	#var far_world := float(far_distance) * TerrainChunk.CHUNK_SIZE
-#
-	#if camera_path != NodePath():
-		#var cam := get_node_or_null(camera_path) as Camera3D
-		#if cam:
-			#cam.far = far_world + TerrainChunk.CHUNK_SIZE  # +1 chunk de margen
-#
-	#if world_environment_path != NodePath():
-		#var world_env := get_node_or_null(world_environment_path) as WorldEnvironment
-		#if world_env and world_env.environment:
-			#var env := world_env.environment
-			#env.fog_enabled = true
-			#var begin_chunks: int = maxi(0, far_distance - fog_buffer_chunks)
-			#env.fog_depth_begin = float(begin_chunks) * TerrainChunk.CHUNK_SIZE
-			#env.fog_depth_end = far_world
+func _apply_visual_range() -> void:
+	var far_world := float(far_distance) * TerrainChunk.CHUNK_SIZE
+
+	if camera_path != NodePath():
+		var cam := get_node_or_null(camera_path) as Camera3D
+		if cam:
+			cam.far = far_world + TerrainChunk.CHUNK_SIZE  # +1 chunk de margen
+
+	if world_environment_path != NodePath():
+		var world_env := get_node_or_null(world_environment_path) as WorldEnvironment
+		if world_env and world_env.environment:
+			var env := world_env.environment
+			env.fog_enabled = true
+			var begin_chunks: int = maxi(0, far_distance - fog_buffer_chunks)
+			env.fog_depth_begin = float(begin_chunks) * TerrainChunk.CHUNK_SIZE
+			env.fog_depth_end = far_world
 
 
 func _process(_delta: float) -> void:
