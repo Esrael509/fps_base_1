@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://c88oo28gk3c7m"]
+[gd_scene load_steps=20 format=3 uid="uid://c88oo28gk3c7m"]
 
 [ext_resource type="Texture2D" uid="uid://bpsoncyoy5gtr" path="res://Imagenes/citrus_orchard_road_puresky_4k.exr" id="1_6yos3"]
 [ext_resource type="BoxMesh" uid="uid://d02o3w81i24yt" path="res://cubo_1.tres" id="4_mtr5u"]
@@ -6,6 +6,7 @@
 [ext_resource type="BoxMesh" uid="uid://d064k56nfwgsd" path="res://objetos/plataforma_alta.tres" id="5_htsna"]
 [ext_resource type="Script" uid="uid://dwhntd6kycjqc" path="res://terrain/chunk_manager.gd" id="6_htsna"]
 [ext_resource type="ArrayOccluder3D" uid="uid://gtk5vomk68t1" path="res://occluders/test_1.occ" id="6_mtr5u"]
+[ext_resource type="Script" uid="uid://cfbqriyc84cl7" path="res://scripts/MinimapCamera.gd" id="7_mtr5u"]
 
 [sub_resource type="GDScript" id="GDScript_hnega"]
 script/source = "#class_name ChunkManager
@@ -202,6 +203,17 @@ albedo_color = Color(0.11916105, 0.12688935, 0.13654724, 1)
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hnega"]
 albedo_color = Color(0.04755766, 0.047557645, 0.047557645, 1)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mtr5u"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+expand_margin_left = 8.0
+expand_margin_top = 8.0
+expand_margin_right = 8.0
+expand_margin_bottom = 8.0
+
 [node name="Node3D" type="Node3D"]
 script = SubResource("GDScript_hnega")
 player_path = NodePath("CharacterBody3D")
@@ -271,5 +283,37 @@ shape = SubResource("BoxShape3D_jx2ws")
 [node name="OccluderInstance3D" type="OccluderInstance3D" parent="."]
 layers = 3
 occluder = ExtResource("6_mtr5u")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_mtr5u")
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="MarginContainer/PanelContainer"]
+custom_minimum_size = Vector2(180, 180)
+layout_mode = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="MarginContainer/PanelContainer/SubViewportContainer"]
+handle_input_locally = false
+size = Vector2i(180, 180)
+render_target_update_mode = 4
+
+[node name="MinimapCamera" type="Camera3D" parent="MarginContainer/PanelContainer/SubViewportContainer/SubViewport" node_paths=PackedStringArray("_target")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 37.784683, 0)
+script = ExtResource("7_mtr5u")
+_target = NodePath("../../../../../CharacterBody3D")
 
 [editable path="CharacterBody3D"]
