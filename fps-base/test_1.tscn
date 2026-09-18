@@ -206,7 +206,7 @@ albedo_color = Color(0.04755766, 0.047557645, 0.047557645, 1)
 script = SubResource("GDScript_hnega")
 player_path = NodePath("CharacterBody3D")
 collision_distance = 5
-world_seed = 4387213
+world_seed = 34254
 camera_path = NodePath("CharacterBody3D/CameraController")
 world_environment_path = NodePath("WorldEnvironment")
 

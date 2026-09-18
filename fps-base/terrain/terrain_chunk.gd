@@ -106,14 +106,13 @@ func _generate_threaded(cx: int, cz: int, res: int, with_collision: bool, gen_id
 			colors[idx] = s.color
 
 	var arrays := _build_surface_arrays(heights, colors, res, step)
-	
-	# --- OPTIMIZACIÓN: Construir la malla y normales EN EL HILO SECUNDARIO ---
-	var temp_mesh := ArrayMesh.new()
-	temp_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	var st := SurfaceTool.new()
-	st.create_from(temp_mesh, 0)
-	st.generate_normals()
-	var final_mesh: ArrayMesh = st.commit()
+
+	# IMPORTANTE: NO se puede construir ArrayMesh/SurfaceTool acá. Ambos
+	# disparan llamadas al RenderingServer, y crear recursos de render
+	# fuera del hilo principal puede colgar el motor (deadlock silencioso,
+	# sin ningún error en consola) según el renderer/driver usado. Por eso
+	# esta función solo prepara los "arrays" en bruto (PackedArrays) y la
+	# malla final se arma en _apply_generated_data(), ya en el hilo principal.
 
 	var coll_heights := PackedFloat32Array()
 	if with_collision:
@@ -129,8 +128,8 @@ func _generate_threaded(cx: int, cz: int, res: int, with_collision: bool, gen_id
 	if lod == 0:
 		veg_data = _scatter_vegetation(cx, cz)
 
-	# Enviamos la malla ya procesada al hilo principal
-	call_deferred("_apply_generated_data", final_mesh, coll_heights, with_collision, veg_data, gen_id)
+	# Enviamos los arrays en bruto (nada de RenderingServer) al hilo principal
+	call_deferred("_apply_generated_data", arrays, coll_heights, with_collision, veg_data, gen_id)
 
 func _build_surface_arrays(heights: PackedFloat32Array, colors: PackedColorArray, res: int, step: float) -> Array:
 	var verts := PackedVector3Array()
@@ -231,13 +230,21 @@ func _vegetation_density(biome: int) -> float:
 # ============================================================
 # De vuelta en el hilo principal: aquí SÍ se puede tocar la escena.
 # ============================================================
-func _apply_generated_data(final_mesh: ArrayMesh, coll_heights: PackedFloat32Array,
+func _apply_generated_data(arrays: Array, coll_heights: PackedFloat32Array,
 		with_collision: bool, veg_data: Dictionary, gen_id: int) -> void:
-	
+
 	if gen_id != _generation_id:
 		return
 
-	# Asignación directa e inmediata (0 impacto en CPU)
+	# La malla y las normales SÍ se arman acá: estamos en el hilo principal,
+	# así que tocar el RenderingServer (ArrayMesh, SurfaceTool) es seguro.
+	var temp_mesh := ArrayMesh.new()
+	temp_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var st := SurfaceTool.new()
+	st.create_from(temp_mesh, 0)
+	st.generate_normals()
+	var final_mesh: ArrayMesh = st.commit()
+
 	mesh_instance.mesh = final_mesh
 
 	if with_collision:
